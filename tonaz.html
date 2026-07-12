@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tonaz — жасанды интеллект көмекшісі</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --black:#0d0d0d;
+    --sidebar:#111113;
+    --sidebar-hover:#1d1d20;
+    --sidebar-active:#242427;
+    --sidebar-text:#e9e9ea;
+    --sidebar-muted:#8a8a90;
+    --white:#ffffff;
+    --off-white:#fafafa;
+    --border:#e7e7e7;
+    --border-soft:#f0f0f0;
+    --text:#0d0d0d;
+    --muted:#78787d;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    color:var(--text);
+    background:var(--white);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- AUTH SCREEN ---------- */
+  .auth-screen{
+    position:fixed; inset:0;
+    background:var(--white);
+    display:flex; align-items:center; justify-content:center;
+    z-index:50;
+  }
+  .auth-card{
+    width:100%; max-width:360px;
+    padding:32px 28px;
+    text-align:center;
+  }
+  .auth-card .logo-mark.large{
+    width:48px;height:48px;border-radius:13px;
+    background:var(--black);
+    margin:0 auto 18px auto;
+    position:relative;
+  }
+  .auth-card .logo-mark.large::before{
+    content:"";
+    position:absolute;left:50%;top:8px;bottom:8px;width:3.5px;
+    background:var(--white);
+    transform:translateX(-50%) rotate(14deg);
+  }
+  .auth-card h1{
+    font-size:22px; font-weight:800; letter-spacing:-0.02em; margin:0 0 6px 0;
+  }
+  .auth-card p{
+    font-size:13.5px; color:var(--muted); margin:0 0 26px 0;
+  }
+  .auth-field{
+    text-align:left; margin-bottom:12px;
+  }
+  .auth-field label{
+    display:block; font-size:12.5px; font-weight:600; margin-bottom:6px;
+  }
+  .auth-field input{
+    width:100%;
+    padding:11px 13px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-family:inherit;
+    font-size:14.5px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  .auth-field input:focus{border-color:#a8a8ac;}
+  .auth-submit{
+    width:100%;
+    padding:12px;
+    background:var(--black);
+    color:var(--white);
+    border:none;
+    border-radius:10px;
+    font-family:inherit;
+    font-size:14.5px;
+    font-weight:600;
+    cursor:pointer;
+    margin-top:6px;
+  }
+  .auth-submit:disabled{opacity:.5; cursor:default;}
+  .auth-switch{
+    margin-top:18px; font-size:13.5px; color:var(--muted);
+  }
+  .auth-switch button{
+    background:none; border:none; color:var(--text); font-weight:600;
+    cursor:pointer; font-family:inherit; font-size:13.5px; text-decoration:underline;
+  }
+  .auth-msg{
+    margin-top:14px; font-size:13px; padding:10px 12px; border-radius:9px;
+    text-align:left; line-height:1.45;
+  }
+  .auth-msg.error{background:#fdeeee; color:#a83030;}
+  .auth-msg.info{background:#f0f4ff; color:#2c4bb0;}
+
+  /* ---------- APP LAYOUT ---------- */
+  .app{
+    display:none;
+    height:100vh;
+    overflow:hidden;
+  }
+  .app.visible{display:flex;}
+
+  .sidebar{
+    width:272px; min-width:272px;
+    background:var(--sidebar); color:var(--sidebar-text);
+    display:flex; flex-direction:column; padding:16px 12px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; padding:6px 8px 18px 8px;}
+  .logo-mark{
+    width:26px; height:26px; background:var(--white); border-radius:7px; position:relative; flex-shrink:0;
+  }
+  .logo-mark::before{
+    content:""; position:absolute; left:50%; top:5px; bottom:5px; width:2.5px;
+    background:var(--sidebar); transform:translateX(-50%) rotate(14deg);
+  }
+  .brand-name{font-weight:800; font-size:17px; letter-spacing:-0.02em;}
+
+  .new-chat{
+    display:flex; align-items:center; gap:8px; width:100%;
+    padding:10px 12px; background:transparent; border:1px solid #303034;
+    color:var(--sidebar-text); border-radius:10px; font-family:inherit;
+    font-size:14px; font-weight:500; cursor:pointer; transition:background .15s ease;
+  }
+  .new-chat:hover{background:var(--sidebar-hover);}
+  .new-chat .plus{font-size:16px; line-height:1;}
+
+  .history{margin-top:20px; flex:1; overflow-y:auto;}
+  .history-group-label{
+    font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--sidebar-muted); padding:10px 10px 6px 10px;
+  }
+  .history-item{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 10px; border-radius:9px; font-size:14px; color:var(--sidebar-text);
+    cursor:pointer; margin-bottom:2px; gap:6px;
+  }
+  .history-item span.title{
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .history-item:hover{background:var(--sidebar-hover);}
+  .history-item.active{background:var(--sidebar-active);}
+  .history-item .del{
+    opacity:0; font-size:13px; color:var(--sidebar-muted); flex-shrink:0;
+  }
+  .history-item:hover .del{opacity:1;}
+  .history-empty{padding:10px; font-size:13px; color:var(--sidebar-muted);}
+
+  .sidebar-footer{border-top:1px solid #26262a; padding-top:12px; margin-top:8px;}
+  .user-row{
+    display:flex; align-items:center; gap:10px; padding:8px 8px; border-radius:10px;
+  }
+  .user-info{display:flex; align-items:center; gap:10px; overflow:hidden; flex:1;}
+  .avatar{
+    width:28px; height:28px; border-radius:50%; background:#3a3a3f;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; font-weight:700; color:var(--white); flex-shrink:0; text-transform:uppercase;
+  }
+  .user-email{
+    font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .logout-btn{
+    background:none; border:none; color:var(--sidebar-muted); cursor:pointer;
+    font-size:12px; font-family:inherit; flex-shrink:0;
+  }
+  .logout-btn:hover{color:var(--sidebar-text);}
+
+  .chat{flex:1; display:flex; flex-direction:column; min-width:0; position:relative;}
+  .chat-header{
+    height:56px; display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:15px; letter-spacing:-0.01em; border-bottom:1px solid var(--border-soft); flex-shrink:0;
+  }
+
+  .messages{flex:1; overflow-y:auto; display:flex; flex-direction:column; align-items:center; padding:24px 20px 8px 20px;}
+  .messages-inner{width:100%; max-width:720px; display:flex; flex-direction:column; gap:22px;}
+
+  .empty-state{margin:auto; text-align:center; max-width:560px; padding-top:8vh;}
+  .empty-state .logo-mark.large{
+    width:52px; height:52px; border-radius:14px; background:var(--black); margin:0 auto 20px auto;
+  }
+  .empty-state .logo-mark.large::before{background:var(--white); top:9px; bottom:9px; width:4px;}
+  .empty-state h1{font-size:26px; font-weight:800; letter-spacing:-0.02em; margin:0 0 8px 0;}
+  .empty-state p{color:var(--muted); font-size:15px; margin:0 0 28px 0;}
+  .suggestions{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .chip{
+    text-align:left; padding:13px 14px; border:1px solid var(--border); border-radius:12px;
+    font-size:13.5px; color:var(--text); background:var(--off-white); cursor:pointer;
+    line-height:1.4; transition:border-color .15s ease, background .15s ease;
+  }
+  .chip:hover{border-color:#c9c9c9; background:var(--white);}
+  .chip b{display:block; font-weight:600; margin-bottom:2px;}
+  .chip span{color:var(--muted); font-weight:400;}
+
+  .msg{display:flex; gap:12px; align-items:flex-start;}
+  .msg.user{justify-content:flex-end;}
+  .msg.user .bubble{
+    background:var(--black); color:var(--white); border-radius:16px 16px 4px 16px;
+    padding:11px 16px; max-width:78%; font-size:15px; line-height:1.55;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  .msg.assistant .avatar-a{
+    width:28px; height:28px; border-radius:8px; background:var(--black);
+    flex-shrink:0; position:relative; margin-top:2px;
+  }
+  .msg.assistant .avatar-a::before{
+    content:""; position:absolute; left:50%; top:5px; bottom:5px; width:2.5px;
+    background:var(--white); transform:translateX(-50%) rotate(14deg);
+  }
+  .msg.assistant .bubble{
+    color:var(--text); font-size:15px; line-height:1.65; padding-top:3px; max-width:82%;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  .typing{display:inline-flex; gap:4px; padding-top:8px;}
+  .typing span{width:6px; height:6px; border-radius:50%; background:#b5b5b8; animation:blink 1.2s infinite ease-in-out;}
+  .typing span:nth-child(2){animation-delay:.2s;}
+  .typing span:nth-child(3){animation-delay:.4s;}
+  @keyframes blink{0%,80%,100%{opacity:.25; transform:translateY(0);} 40%{opacity:1; transform:translateY(-2px);}}
+
+  .composer-wrap{display:flex; justify-content:center; padding:8px 20px 6px 20px; flex-shrink:0;}
+  .composer{
+    width:100%; max-width:720px; display:flex; align-items:flex-end; gap:8px;
+    border:1px solid var(--border); border-radius:22px; padding:10px 10px 10px 18px;
+    background:var(--white); box-shadow:0 1px 2px rgba(0,0,0,.03);
+  }
+  .composer:focus-within{border-color:#bdbdbd;}
+  #input{
+    flex:1; border:none; outline:none; resize:none; font-family:inherit; font-size:15px;
+    line-height:1.5; max-height:180px; padding:6px 0; color:var(--text); background:transparent;
+  }
+  #input::placeholder{color:#a8a8ac;}
+  #sendBtn{
+    width:34px; height:34px; border-radius:50%; border:none; background:var(--black); color:var(--white);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+    font-size:16px; transition:opacity .15s ease, transform .1s ease;
+  }
+  #sendBtn:disabled{opacity:.3; cursor:default;}
+  #sendBtn:not(:disabled):active{transform:scale(.92);}
+
+  .disclaimer{text-align:center; font-size:11.5px; color:#aaaaad; padding:6px 0 14px 0; flex-shrink:0;}
+
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:#dcdcdc; border-radius:8px;}
+  .sidebar ::-webkit-scrollbar-thumb{background:#333336;}
+
+  @media (max-width:760px){
+    .suggestions{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= AUTH SCREEN ================= -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="logo-mark large"></div>
+    <h1 id="authTitle">Tonaz-қа кіру</h1>
+    <p id="authSubtitle">Чат тарихыңыз аккаунтыңызда сақталады</p>
+
+    <div class="auth-field">
+      <label>Электрондық пошта</label>
+      <input type="email" id="authEmail" placeholder="you@mail.com" autocomplete="email">
+    </div>
+    <div class="auth-field">
+      <label>Құпия сөз</label>
+      <input type="password" id="authPassword" placeholder="Кемінде 6 таңба" autocomplete="current-password">
+    </div>
+    <button class="auth-submit" id="authSubmit">Кіру</button>
+
+    <div class="auth-switch">
+      <span id="authSwitchText">Аккаунтыңыз жоқ па?</span>
+      <button id="authSwitchBtn">Тіркелу</button>
+    </div>
+
+    <div id="authMsg"></div>
+  </div>
+</div>
+
+<!-- ================= MAIN APP ================= -->
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo-mark"></div>
+      <div class="brand-name">Tonaz</div>
+    </div>
+    <button class="new-chat" id="newChatBtn">
+      <span class="plus">+</span> Жаңа чат
+    </button>
+    <div class="history" id="history"></div>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-info">
+          <div class="avatar" id="avatarLetter">?</div>
+          <div class="user-email" id="userEmail">—</div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">Шығу</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="chat">
+    <div class="chat-header">Tonaz</div>
+
+    <div class="messages" id="messagesWrap">
+      <div class="messages-inner" id="messagesInner">
+        <div class="empty-state" id="emptyState">
+          <div class="logo-mark large"></div>
+          <h1>Сәлем, мен Tonaz-пын</h1>
+          <p>Сізге қалай көмектесе аламын?</p>
+          <div class="suggestions">
+            <div class="chip" data-prompt="Топырақтың тұздылығы мен ылғалдылығын өлшейтін жүйе туралы қысқаша түсіндір">
+              <b>Идея түсіндіру</b><span>ауыл шаруашылығы сенсорлары туралы</span>
+            </div>
+            <div class="chip" data-prompt="Осы хабарламаны қысқартып, негізгі ойды ғана қалдыр:">
+              <b>Мәтінді қысқарту</b><span>негізгі ойды сақтап</span>
+            </div>
+            <div class="chip" data-prompt="Python-да массивтен ең үлкен санды табатын функция жаз">
+              <b>Код жазу</b><span>мысал ретінде Python</span>
+            </div>
+            <div class="chip" data-prompt="Апталық жоспар құруға көмектес: жұмыс, оқу және демалыс уақыты теңдей бөлінсін">
+              <b>Жоспар құру</b><span>апталық кесте</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        <textarea id="input" rows="1" placeholder="Tonaz-қа хабарлама жазыңыз"></textarea>
+        <button id="sendBtn" disabled aria-label="Жіберу">↑</button>
+      </div>
+    </div>
+    <div class="disclaimer">Tonaz қателесуі мүмкін. Маңызды ақпаратты тексеріп алыңыз.</div>
+  </main>
+</div>
+
+<script>
+(function(){
+  // =======================================================
+  // 1) ТЕК ОСЫ ЕКІ ЖОЛДЫ ӨЗІҢНІҢ SUPABASE МӘЛІМЕТТЕРІМЕН АУЫСТЫР
+  // Supabase жобаңда: Settings -> API
+  // =======================================================
+  const SUPABASE_URL = "https://yqmgglqzxtuevtxqihws.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxbWdnbHF6eHR1ZXZ0eHFpaHdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4Njg3OTgsImV4cCI6MjA5OTQ0NDc5OH0.3w1PydRj9KL8-rRGZdWFnCDJ9Nf6gch45xt4ecQbSok";
+  // =======================================================
+
+  if(!window.supabase){
+    document.getElementById('authSubtitle').textContent = 'Supabase кітапханасы жүктелмеді. Интернет байланысын тексеріп, парақшаны қайта жүктеңіз.';
+    document.getElementById('authEmail').style.display = 'none';
+    document.getElementById('authPassword').style.display = 'none';
+    document.getElementById('authSubmit').style.display = 'none';
+    document.querySelector('.auth-switch').style.display = 'none';
+    return;
+  }
+
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const SYSTEM_PROMPT = "Сен — Tonaz есімді жасанды интеллект көмекшісісің. Жауаптарыңды әрқашан тек қазақ тілінде, анық, сыпайы және қысқа әрі нақты етіп бер. Егер пайдаланушы басқа тілде жазса да, оған қазақ тілінде жауап бер.";
+
+  let currentUser = null;
+  let conversations = [];   // { id (uuid), title, messages: [{role,text}] }
+  let activeId = null;
+  let isRegisterMode = false;
+
+  // ---------- DOM ----------
+  const authScreen = document.getElementById('authScreen');
+  const authTitle = document.getElementById('authTitle');
+  const authSubtitle = document.getElementById('authSubtitle');
+  const authEmail = document.getElementById('authEmail');
+  const authPassword = document.getElementById('authPassword');
+  const authSubmit = document.getElementById('authSubmit');
+  const authSwitchText = document.getElementById('authSwitchText');
+  const authSwitchBtn = document.getElementById('authSwitchBtn');
+  const authMsg = document.getElementById('authMsg');
+
+  const appEl = document.getElementById('app');
+  const messagesInner = document.getElementById('messagesInner');
+  const emptyState = document.getElementById('emptyState');
+  const historyEl = document.getElementById('history');
+  const input = document.getElementById('input');
+  const sendBtn = document.getElementById('sendBtn');
+  const messagesWrap = document.getElementById('messagesWrap');
+  const newChatBtn = document.getElementById('newChatBtn');
+  const userEmailEl = document.getElementById('userEmail');
+  const avatarLetterEl = document.getElementById('avatarLetter');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  // ---------- AUTH UI ----------
+  function showAuthMsg(text, type){
+    authMsg.innerHTML = `<div class="auth-msg ${type}">${text}</div>`;
+  }
+  function clearAuthMsg(){ authMsg.innerHTML = ''; }
+
+  authSwitchBtn.addEventListener('click', () => {
+    isRegisterMode = !isRegisterMode;
+    clearAuthMsg();
+    if(isRegisterMode){
+      authTitle.textContent = 'Tonaz-та тіркелу';
+      authSubtitle.textContent = 'Жаңа аккаунт құрып, чатты бастаңыз';
+      authSubmit.textContent = 'Тіркелу';
+      authSwitchText.textContent = 'Аккаунтыңыз бар ма?';
+      authSwitchBtn.textContent = 'Кіру';
+    } else {
+      authTitle.textContent = 'Tonaz-қа кіру';
+      authSubtitle.textContent = 'Чат тарихыңыз аккаунтыңызда сақталады';
+      authSubmit.textContent = 'Кіру';
+      authSwitchText.textContent = 'Аккаунтыңыз жоқ па?';
+      authSwitchBtn.textContent = 'Тіркелу';
+    }
+  });
+
+  authSubmit.addEventListener('click', async () => {
+    const email = authEmail.value.trim();
+    const password = authPassword.value;
+    clearAuthMsg();
+
+    if(!email || !password){
+      showAuthMsg('Пошта мен құпия сөзді толтырыңыз.', 'error');
+      return;
+    }
+    if(password.length < 6){
+      showAuthMsg('Құпия сөз кемінде 6 таңбадан тұруы керек.', 'error');
+      return;
+    }
+
+    authSubmit.disabled = true;
+    authSubmit.textContent = 'Күте тұрыңыз...';
+
+    try{
+      if(isRegisterMode){
+        const { data, error } = await sb.auth.signUp({ email, password });
+        if(error) throw error;
+        if(data.session){
+          // конфирмация талап етілмейді, бірден кірді
+        } else {
+          showAuthMsg('Тіркелу сәтті өтті! Поштаңызға жіберілген растау сілтемесін басып, содан кейін кіріңіз.', 'info');
+        }
+      } else {
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if(error) throw error;
+      }
+    }catch(err){
+      showAuthMsg(err.message || 'Қате орын алды. Қайта көріңіз.', 'error');
+    }
+
+    authSubmit.disabled = false;
+    authSubmit.textContent = isRegisterMode ? 'Тіркелу' : 'Кіру';
+  });
+
+  logoutBtn.addEventListener('click', async () => {
+    await sb.auth.signOut();
+  });
+
+  // ---------- AUTH STATE ----------
+  sb.auth.onAuthStateChange((event, session) => {
+    if(session && session.user){
+      currentUser = session.user;
+      authScreen.style.display = 'none';
+      appEl.classList.add('visible');
+      userEmailEl.textContent = currentUser.email;
+      avatarLetterEl.textContent = currentUser.email.charAt(0);
+      loadConversations();
+    } else {
+      currentUser = null;
+      conversations = [];
+      activeId = null;
+      appEl.classList.remove('visible');
+      authScreen.style.display = 'flex';
+    }
+  });
+
+  // ---------- DATA: SUPABASE ----------
+  async function loadConversations(){
+    const { data, error } = await sb
+      .from('conversations')
+      .select('*')
+      .order('updated_at', { ascending: false });
+
+    if(error){
+      console.error(error);
+      conversations = [];
+    } else {
+      conversations = (data || []).map(row => ({
+        id: row.id,
+        title: row.title || 'Жаңа чат',
+        messages: row.messages || []
+      }));
+    }
+
+    if(conversations.length === 0){
+      await createConversation();
+    } else {
+      activeId = conversations[0].id;
+      renderAll();
+    }
+  }
+
+  async function createConversation(){
+    const { data, error } = await sb
+      .from('conversations')
+      .insert({ title: 'Жаңа чат', messages: [] })
+      .select()
+      .single();
+
+    if(error){ console.error(error); return; }
+
+    conversations.unshift({ id: data.id, title: data.title, messages: [] });
+    activeId = data.id;
+    renderAll();
+  }
+
+  async function saveConversation(conv){
+    await sb
+      .from('conversations')
+      .update({ title: conv.title, messages: conv.messages, updated_at: new Date().toISOString() })
+      .eq('id', conv.id);
+  }
+
+  async function deleteConversation(id){
+    await sb.from('conversations').delete().eq('id', id);
+    conversations = conversations.filter(c => c.id !== id);
+    if(activeId === id){
+      if(conversations.length > 0){ activeId = conversations[0].id; }
+      else { await createConversation(); return; }
+    }
+    renderAll();
+  }
+
+  // ---------- RENDER ----------
+  function activeConversation(){
+    return conversations.find(c => c.id === activeId);
+  }
+
+  function renderHistory(){
+    historyEl.innerHTML = '<div class="history-group-label">Чаттар</div>';
+    if(conversations.length === 0){
+      historyEl.innerHTML += '<div class="history-empty">Әзірге чат жоқ</div>';
+      return;
+    }
+    conversations.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'history-item' + (c.id === activeId ? ' active' : '');
+      item.innerHTML = `<span class="title"></span><span class="del">✕</span>`;
+      item.querySelector('.title').textContent = c.title;
+      item.querySelector('.title').addEventListener('click', () => {
+        activeId = c.id;
+        renderAll();
+      });
+      item.querySelector('.del').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteConversation(c.id);
+      });
+      historyEl.appendChild(item);
+    });
+  }
+
+  function renderMessages(){
+    const conv = activeConversation();
+    messagesInner.innerHTML = '';
+    if(!conv || conv.messages.length === 0){
+      messagesInner.appendChild(emptyState);
+      return;
+    }
+    conv.messages.forEach(m => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'msg ' + m.role;
+      if(m.role === 'user'){
+        wrapper.innerHTML = `<div class="bubble"></div>`;
+        wrapper.querySelector('.bubble').textContent = m.text;
+      } else {
+        wrapper.innerHTML = `<div class="avatar-a"></div><div class="bubble"></div>`;
+        wrapper.querySelector('.bubble').textContent = m.text;
+      }
+      messagesInner.appendChild(wrapper);
+    });
+    scrollToBottom();
+  }
+
+  function scrollToBottom(){
+    requestAnimationFrame(() => { messagesWrap.scrollTop = messagesWrap.scrollHeight; });
+  }
+
+  function renderAll(){
+    renderHistory();
+    renderMessages();
+  }
+
+  function addTypingIndicator(){
+    const wrapper = document.createElement('div');
+    wrapper.className = 'msg assistant';
+    wrapper.id = 'typingIndicator';
+    wrapper.innerHTML = `<div class="avatar-a"></div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+    messagesInner.appendChild(wrapper);
+    scrollToBottom();
+  }
+  function removeTypingIndicator(){
+    const el = document.getElementById('typingIndicator');
+    if(el) el.remove();
+  }
+
+  // ---------- CHAT ----------
+  async function sendMessage(){
+    const text = input.value.trim();
+    if(!text) return;
+    const conv = activeConversation();
+    if(!conv) return;
+
+    if(conv.messages.length === 0){
+      conv.title = text.length > 28 ? text.slice(0, 28) + '…' : text;
+    }
+    conv.messages.push({ role: 'user', text });
+
+    input.value = '';
+    input.style.height = 'auto';
+    sendBtn.disabled = true;
+
+    renderAll();
+    addTypingIndicator();
+
+    try{
+      const apiMessages = conv.messages.map(m => ({ role: m.role, content: m.text }));
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          system: SYSTEM_PROMPT,
+          messages: apiMessages
+        })
+      });
+      const data = await response.json();
+      const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text);
+      const reply = textBlocks.join('\n').trim() || "Кешіріңіз, жауап ала алмадым. Қайта көріңіз.";
+      conv.messages.push({ role: 'assistant', text: reply });
+    }catch(err){
+      conv.messages.push({ role: 'assistant', text: "Кешіріңіз, қате орын алды. Байланысты тексеріп, қайта көріңіз." });
+    }
+
+    removeTypingIndicator();
+    renderAll();
+    await saveConversation(conv);
+    renderHistory(); // title / order may have changed
+  }
+
+  newChatBtn.addEventListener('click', () => {
+    createConversation();
+    input.focus();
+  });
+
+  sendBtn.addEventListener('click', sendMessage);
+  input.addEventListener('input', () => {
+    sendBtn.disabled = input.value.trim().length === 0;
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 180) + 'px';
+  });
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      if(!sendBtn.disabled) sendMessage();
+    }
+  });
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      input.value = chip.getAttribute('data-prompt');
+      sendBtn.disabled = false;
+      input.dispatchEvent(new Event('input'));
+      sendMessage();
+    });
+  });
+})();
+</script>
+</body>
+</html>
