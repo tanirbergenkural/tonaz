@@ -184,7 +184,29 @@
   .chat-header{
     height:56px; display:flex; align-items:center; justify-content:center;
     font-weight:700; font-size:15px; letter-spacing:-0.01em; border-bottom:1px solid var(--border-soft); flex-shrink:0;
+    position:relative;
   }
+  .menu-toggle{
+    display:none;
+    position:absolute; left:14px; top:50%; transform:translateY(-50%);
+    width:34px; height:34px; border-radius:9px; border:none; background:transparent;
+    align-items:center; justify-content:center; cursor:pointer;
+  }
+  .menu-toggle:hover{background:var(--off-white);}
+  .menu-toggle span{
+    display:block; width:18px; height:2px; background:var(--black); border-radius:2px; position:relative;
+  }
+  .menu-toggle span::before, .menu-toggle span::after{
+    content:""; position:absolute; left:0; width:18px; height:2px; background:var(--black); border-radius:2px;
+  }
+  .menu-toggle span::before{top:-5px;}
+  .menu-toggle span::after{top:5px;}
+
+  .sidebar-overlay{
+    display:none;
+    position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9;
+  }
+  .sidebar-overlay.visible{display:block;}
 
   .messages{flex:1; overflow-y:auto; display:flex; flex-direction:column; align-items:center; padding:24px 20px 8px 20px;}
   .messages-inner{width:100%; max-width:720px; display:flex; flex-direction:column; gap:22px;}
@@ -259,6 +281,15 @@
 
   @media (max-width:760px){
     .suggestions{grid-template-columns:1fr;}
+    .menu-toggle{display:flex;}
+    .sidebar{
+      position:fixed; left:0; top:0; bottom:0; z-index:10;
+      width:78%; max-width:300px;
+      transform:translateX(-100%);
+      transition:transform .22s ease;
+      box-shadow:2px 0 24px rgba(0,0,0,.25);
+    }
+    .sidebar.open{transform:translateX(0);}
   }
 </style>
 </head>
@@ -313,7 +344,11 @@
   </aside>
 
   <main class="chat">
-    <div class="chat-header">Tonaz</div>
+    <div class="chat-header">
+      <button class="menu-toggle" id="menuToggle" aria-label="Тарихты ашу"><span></span></button>
+      Tonaz
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <div class="messages" id="messagesWrap">
       <div class="messages-inner" id="messagesInner">
@@ -371,6 +406,17 @@
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const SYSTEM_PROMPT = "Сен — Tonaz есімді жасанды интеллект көмекшісісің. Жауаптарыңды әрқашан тек қазақ тілінде, анық, сыпайы және қысқа әрі нақты етіп бер. Егер пайдаланушы басқа тілде жазса да, оған қазақ тілінде жауап бер.";
 
+  function buildSystemPrompt(){
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('kk-KZ', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Almaty'
+    });
+    const timeStr = now.toLocaleTimeString('kk-KZ', {
+      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Almaty'
+    });
+    return `${SYSTEM_PROMPT}\n\nАғымдағы дата мен уақыт (Астана уақыты бойынша): ${dateStr}, сағат ${timeStr}. Пайдаланушы күн, апта күні немесе уақыт туралы сұраса, осы нақты ақпаратты пайдалан, ешқашан ескі немесе шамамен деректерді бермеу.`;
+  }
+
   let currentUser = null;
   let conversations = [];   // { id (uuid), title, messages: [{role,text}] }
   let activeId = null;
@@ -398,6 +444,22 @@
   const userEmailEl = document.getElementById('userEmail');
   const avatarLetterEl = document.getElementById('avatarLetter');
   const logoutBtn = document.getElementById('logoutBtn');
+  const menuToggle = document.getElementById('menuToggle');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const sidebarEl = document.getElementById('sidebar');
+
+  function openSidebar(){
+    sidebarEl.classList.add('open');
+    sidebarOverlay.classList.add('visible');
+  }
+  function closeSidebar(){
+    sidebarEl.classList.remove('open');
+    sidebarOverlay.classList.remove('visible');
+  }
+  menuToggle.addEventListener('click', () => {
+    sidebarEl.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  sidebarOverlay.addEventListener('click', closeSidebar);
 
   // ---------- AUTH UI ----------
   function showAuthMsg(text, type){
@@ -468,12 +530,17 @@
   // ---------- AUTH STATE ----------
   sb.auth.onAuthStateChange((event, session) => {
     if(session && session.user){
+      const isNewUser = !currentUser || currentUser.id !== session.user.id;
       currentUser = session.user;
       authScreen.style.display = 'none';
       appEl.classList.add('visible');
       userEmailEl.textContent = currentUser.email;
       avatarLetterEl.textContent = currentUser.email.charAt(0);
-      loadConversations();
+      // Тек шынымен жаңа кіру кезінде ғана чаттарды қайта жүктейміз
+      // (токен жаңарту сияқты оқиғалар ағымдағы чатты қайта жаза бермеу үшін)
+      if(isNewUser){
+        loadConversations();
+      }
     } else {
       currentUser = null;
       conversations = [];
@@ -559,6 +626,7 @@
       item.querySelector('.title').addEventListener('click', () => {
         activeId = c.id;
         renderAll();
+        closeSidebar();
       });
       item.querySelector('.del').addEventListener('click', (e) => {
         e.stopPropagation();
@@ -640,7 +708,7 @@
           "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify({
-          system: SYSTEM_PROMPT,
+          system: buildSystemPrompt(),
           messages: apiMessages
         })
       });
@@ -660,6 +728,7 @@
   newChatBtn.addEventListener('click', () => {
     createConversation();
     input.focus();
+    closeSidebar();
   });
 
   sendBtn.addEventListener('click', sendMessage);
