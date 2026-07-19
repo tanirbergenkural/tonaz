@@ -645,7 +645,7 @@
         })
       });
       const data = await response.json();
-      const reply = (data.text || "").trim() || "Кешіріңіз, жауап ала алмадым. Қайта көріңіз.";
+      const reply = (data.text || "").trim() || "Кешіріңіз, жауап ала алмадым. Бірнеше секундтан кейін қайта көріңіз (мүмкін, тегін лимитке тап болдыңыз).";
       conv.messages.push({ role: 'assistant', text: reply });
     }catch(err){
       conv.messages.push({ role: 'assistant', text: "Кешіріңіз, қате орын алды. Байланысты тексеріп, қайта көріңіз." });
