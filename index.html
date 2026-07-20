@@ -386,7 +386,7 @@
 <div class="auth-screen" id="authScreen">
   <div class="auth-card">
     <div class="logo-mark large"></div>
-    <h1 id="authTitle">Tonaz-қа кіру</h1>
+    <h1 id="authTitle">Tonaz-ға кіру</h1>
     <p id="authSubtitle">Чат тарихыңыз аккаунтыңызда сақталады</p>
 
     <div class="auth-field">
@@ -448,7 +448,7 @@
       <div class="messages-inner" id="messagesInner">
         <div class="empty-state" id="emptyState">
           <div class="logo-mark large"></div>
-          <h1>Сәлем, мен Tonaz-пын</h1>
+          <h1>Сәлем, мен Tonaz-бын</h1>
           <p>Сізге қалай көмектесе аламын?</p>
           <div class="suggestions">
             <div class="chip" data-prompt="Топырақтың тұздылығы мен ылғалдылығын өлшейтін жүйе туралы қысқаша түсіндір">
@@ -476,7 +476,7 @@
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a5.5 5.5 0 01-7.78-7.78l9.19-9.19a3.5 3.5 0 015 5l-9.2 9.19a1.5 1.5 0 01-2.12-2.12l8.49-8.48"></path></svg>
           </button>
           <input type="file" id="fileInput" accept="image/*,application/pdf,.doc,.docx,.txt" hidden>
-          <textarea id="input" rows="1" placeholder="Tonaz-қа хабарлама жазыңыз"></textarea>
+          <textarea id="input" rows="1" placeholder="Tonaz-ға хабарлама жазыңыз"></textarea>
           <button id="sendBtn" disabled aria-label="Жіберу">↑</button>
         </div>
       </div>
@@ -540,7 +540,7 @@
     const timeStr = now.toLocaleTimeString('kk-KZ', {
       hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Almaty'
     });
-    return `${SYSTEM_PROMPT}\n\nАғымдағы дата мен уақыт (Астана уақыты бойынша): ${dateStr}, сағат ${timeStr}. Пайдаланушы күн, апта күні немесе уақыт туралы сұраса, осы нақты ақпаратты пайдалан, ешқашан ескі немесе шамамен деректерді бермеу.`;
+    return `${SYSTEM_PROMPT}\n\nАғымдағы дата мен уақыт (Астана уақыты бойынша): ${dateStr}, сағат ${timeStr}. Бұл ақпаратты ТЕК пайдаланушы күн, апта күні немесе уақыт туралы НАҚТЫ сұраған жағдайда ғана қолдан. Басқа барлық сұрақтарда бұл ақпаратты мүлдем айтпа және есіңе алма — тек өз жауабыңды бер.`;
   }
 
   let currentUser = null;
@@ -678,7 +678,7 @@
       authSwitchText.textContent = 'Аккаунтыңыз бар ма?';
       authSwitchBtn.textContent = 'Кіру';
     } else {
-      authTitle.textContent = 'Tonaz-қа кіру';
+      authTitle.textContent = 'Tonaz-ға кіру';
       authSubtitle.textContent = 'Чат тарихыңыз аккаунтыңызда сақталады';
       authSubmit.textContent = 'Кіру';
       authSwitchText.textContent = 'Аккаунтыңыз жоқ па?';
