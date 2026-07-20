@@ -284,15 +284,47 @@
   @keyframes blink{0%,80%,100%{opacity:.25; transform:translateY(0);} 40%{opacity:1; transform:translateY(-2px);}}
 
   .composer-wrap{display:flex; justify-content:center; padding:8px 20px 6px 20px; flex-shrink:0;}
+  .composer-box{
+    width:100%; max-width:720px;
+  }
+  .attachment-preview{
+    display:none;
+    align-items:center; gap:10px;
+    padding:8px 12px; margin-bottom:6px;
+    border:1px solid var(--border); border-radius:14px; background:var(--bg-soft);
+  }
+  .attachment-preview.visible{display:flex;}
+  .attachment-preview img{
+    width:38px; height:38px; border-radius:8px; object-fit:cover; flex-shrink:0;
+  }
+  .attachment-preview .file-icon{
+    width:38px; height:38px; border-radius:8px; background:var(--accent-bg); color:var(--accent-text);
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0;
+  }
+  .attachment-preview .att-info{flex:1; min-width:0;}
+  .attachment-preview .att-name{
+    font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .attachment-preview .att-size{font-size:11.5px; color:var(--muted);}
+  .attachment-preview .att-remove{
+    background:none; border:none; cursor:pointer; color:var(--muted); font-size:15px; flex-shrink:0; padding:4px;
+  }
+  .attachment-preview .att-remove:hover{color:var(--text);}
+
   .composer{
-    width:100%; max-width:720px; display:flex; align-items:flex-end; gap:8px;
-    border:1px solid var(--border); border-radius:22px; padding:10px 10px 10px 18px;
+    width:100%; display:flex; align-items:flex-end; gap:6px;
+    border:1px solid var(--border); border-radius:22px; padding:8px 10px 8px 8px;
     background:var(--bg); box-shadow:0 1px 2px rgba(0,0,0,.03);
   }
   .composer:focus-within{border-color:#bdbdbd;}
+  .attach-btn{
+    width:34px; height:34px; border-radius:50%; border:none; background:transparent; color:var(--muted);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+  }
+  .attach-btn:hover{background:var(--bg-soft); color:var(--text);}
   #input{
     flex:1; border:none; outline:none; resize:none; font-family:inherit; font-size:15px;
-    line-height:1.5; max-height:180px; padding:6px 0; color:var(--text); background:transparent;
+    line-height:1.5; max-height:180px; padding:8px 0; color:var(--text); background:transparent;
   }
   #input::placeholder{color:var(--muted);}
   #sendBtn{
@@ -302,6 +334,21 @@
   }
   #sendBtn:disabled{opacity:.3; cursor:default;}
   #sendBtn:not(:disabled):active{transform:scale(.92);}
+
+  .msg-attachment{margin-bottom:6px;}
+  .msg-attachment img{
+    max-width:280px; max-height:280px; border-radius:12px; display:block; cursor:pointer;
+  }
+  .msg-attachment .file-chip{
+    display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:12px;
+    background:var(--bg-soft); border:1px solid var(--border); text-decoration:none; color:var(--text);
+    font-size:13px; max-width:260px;
+  }
+  .msg-attachment .file-chip .file-icon{
+    width:30px; height:30px; border-radius:7px; background:var(--accent-bg); color:var(--accent-text);
+    display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; flex-shrink:0;
+  }
+  .msg-attachment .file-chip .fc-name{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 
   .disclaimer{text-align:center; font-size:11.5px; color:var(--muted); padding:6px 0 14px 0; flex-shrink:0;}
 
@@ -376,9 +423,9 @@
       <div class="theme-row">
         <div class="theme-row-label">
           <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
-          <span>Түңгі режим</span>
+          <span>Түнгі режим</span>
         </div>
-        <button class="theme-switch" id="themeSwitch" aria-label="Түңгі режимді ауыстыру"></button>
+        <button class="theme-switch" id="themeSwitch" aria-label="Түнгі режимді ауыстыру"></button>
       </div>
       <div class="user-row">
         <div class="user-info">
@@ -401,7 +448,7 @@
       <div class="messages-inner" id="messagesInner">
         <div class="empty-state" id="emptyState">
           <div class="logo-mark large"></div>
-          <h1>Сәлем, мен Tonaz-бын</h1>
+          <h1>Сәлем, мен Tonaz-пын</h1>
           <p>Сізге қалай көмектесе аламын?</p>
           <div class="suggestions">
             <div class="chip" data-prompt="Топырақтың тұздылығы мен ылғалдылығын өлшейтін жүйе туралы қысқаша түсіндір">
@@ -422,9 +469,16 @@
     </div>
 
     <div class="composer-wrap">
-      <div class="composer">
-        <textarea id="input" rows="1" placeholder="Tonaz-қа хабарлама жазыңыз"></textarea>
-        <button id="sendBtn" disabled aria-label="Жіберу">↑</button>
+      <div class="composer-box">
+        <div class="attachment-preview" id="attachmentPreview"></div>
+        <div class="composer">
+          <button class="attach-btn" id="attachBtn" aria-label="Файл тіркеу" type="button">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a5.5 5.5 0 01-7.78-7.78l9.19-9.19a3.5 3.5 0 015 5l-9.2 9.19a1.5 1.5 0 01-2.12-2.12l8.49-8.48"></path></svg>
+          </button>
+          <input type="file" id="fileInput" accept="image/*,application/pdf,.doc,.docx,.txt" hidden>
+          <textarea id="input" rows="1" placeholder="Tonaz-қа хабарлама жазыңыз"></textarea>
+          <button id="sendBtn" disabled aria-label="Жіберу">↑</button>
+        </div>
       </div>
     </div>
     <div class="disclaimer">Tonaz қателесуі мүмкін. Маңызды ақпаратты тексеріп алыңыз.</div>
@@ -519,6 +573,81 @@
   const menuToggle = document.getElementById('menuToggle');
   const sidebarOverlay = document.getElementById('sidebarOverlay');
   const sidebarEl = document.getElementById('sidebar');
+  const attachBtn = document.getElementById('attachBtn');
+  const fileInput = document.getElementById('fileInput');
+  const attachmentPreviewEl = document.getElementById('attachmentPreview');
+
+  const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
+  const GEMINI_READABLE_TYPES = ['image/png','image/jpeg','image/webp','image/heic','image/heif','application/pdf','text/plain'];
+  let pendingAttachment = null; // { file, name, type, size, previewUrl }
+
+  function formatFileSize(bytes){
+    if(bytes < 1024) return bytes + ' B';
+    if(bytes < 1024*1024) return Math.round(bytes/1024) + ' KB';
+    return (bytes/(1024*1024)).toFixed(1) + ' MB';
+  }
+
+  function fileExt(name){
+    const parts = name.split('.');
+    return parts.length > 1 ? parts.pop().toUpperCase() : 'FILE';
+  }
+
+  function renderAttachmentPreview(){
+    if(!pendingAttachment){
+      attachmentPreviewEl.classList.remove('visible');
+      attachmentPreviewEl.innerHTML = '';
+      return;
+    }
+    const isImage = pendingAttachment.type.startsWith('image/');
+    attachmentPreviewEl.innerHTML = `
+      ${isImage
+        ? `<img src="${pendingAttachment.previewUrl}">`
+        : `<div class="file-icon">${fileExt(pendingAttachment.name)}</div>`}
+      <div class="att-info">
+        <div class="att-name"></div>
+        <div class="att-size">${formatFileSize(pendingAttachment.size)}</div>
+      </div>
+      <button class="att-remove" type="button" aria-label="Алып тастау">✕</button>
+    `;
+    attachmentPreviewEl.querySelector('.att-name').textContent = pendingAttachment.name;
+    attachmentPreviewEl.querySelector('.att-remove').addEventListener('click', () => {
+      pendingAttachment = null;
+      fileInput.value = '';
+      renderAttachmentPreview();
+      sendBtn.disabled = input.value.trim().length === 0 && !pendingAttachment;
+    });
+    attachmentPreviewEl.classList.add('visible');
+  }
+
+  attachBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if(!file) return;
+    if(file.size > MAX_FILE_SIZE){
+      alert('Файл тым үлкен. Ең көбі 8MB болу керек.');
+      fileInput.value = '';
+      return;
+    }
+    pendingAttachment = {
+      file,
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      size: file.size,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+    };
+    renderAttachmentPreview();
+    sendBtn.disabled = false;
+  });
+
+  async function uploadAttachment(att){
+    const safeName = att.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+    const path = `${currentUser.id}/${Date.now()}_${safeName}`;
+    const { error } = await sb.storage.from('uploads').upload(path, att.file, { contentType: att.type });
+    if(error) throw error;
+    const { data } = sb.storage.from('uploads').getPublicUrl(path);
+    return { url: data.publicUrl, name: att.name, type: att.type, size: att.size };
+  }
 
   function openSidebar(){
     sidebarEl.classList.add('open');
@@ -708,6 +837,24 @@
     });
   }
 
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function attachmentHTML(att){
+    if(!att) return '';
+    const safeName = escapeHtml(att.name);
+    if(att.type && att.type.startsWith('image/')){
+      return `<div class="msg-attachment"><img src="${att.url}" alt="${safeName}" onclick="window.open('${att.url}','_blank')"></div>`;
+    }
+    return `<div class="msg-attachment"><a class="file-chip" href="${att.url}" target="_blank" rel="noopener">
+      <div class="file-icon">${fileExt(att.name)}</div>
+      <span class="fc-name">${safeName}</span>
+    </a></div>`;
+  }
+
   function renderMessages(){
     const conv = activeConversation();
     messagesInner.innerHTML = '';
@@ -719,8 +866,8 @@
       const wrapper = document.createElement('div');
       wrapper.className = 'msg ' + m.role;
       if(m.role === 'user'){
-        wrapper.innerHTML = `<div class="bubble"></div>`;
-        wrapper.querySelector('.bubble').textContent = m.text;
+        wrapper.innerHTML = `<div class="bubble">${attachmentHTML(m.attachment)}<span class="bubble-text"></span></div>`;
+        if(m.text) wrapper.querySelector('.bubble-text').textContent = m.text;
       } else {
         wrapper.innerHTML = `<div class="avatar-a"></div><div class="bubble"></div>`;
         wrapper.querySelector('.bubble').textContent = m.text;
@@ -755,34 +902,62 @@
   // ---------- CHAT ----------
   async function sendMessage(){
     const text = input.value.trim();
-    if(!text) return;
+    if(!text && !pendingAttachment) return;
     const conv = activeConversation();
     if(!conv) return;
 
-    if(conv.messages.length === 0){
-      conv.title = text.length > 28 ? text.slice(0, 28) + '…' : text;
+    sendBtn.disabled = true;
+
+    let attachment = null;
+    if(pendingAttachment){
+      try{
+        attachment = await uploadAttachment(pendingAttachment);
+      }catch(err){
+        conv.messages.push({ role: 'assistant', text: "Кешіріңіз, файлды жүктеу кезінде қате орын алды." });
+        renderAll();
+        sendBtn.disabled = false;
+        return;
+      }
     }
-    conv.messages.push({ role: 'user', text });
+
+    const titleSource = text || (attachment ? attachment.name : '');
+    if(conv.messages.length === 0){
+      conv.title = titleSource.length > 28 ? titleSource.slice(0, 28) + '…' : titleSource;
+    }
+    conv.messages.push({ role: 'user', text, attachment });
 
     input.value = '';
     input.style.height = 'auto';
-    sendBtn.disabled = true;
+    pendingAttachment = null;
+    fileInput.value = '';
+    renderAttachmentPreview();
 
     renderAll();
     addTypingIndicator();
 
     try{
-      const apiMessages = conv.messages.map(m => ({ role: m.role, content: m.text }));
+      const apiMessages = conv.messages.map((m, i) => {
+        const isLast = i === conv.messages.length - 1;
+        let content = m.text || '';
+        if(m.attachment && !(isLast && GEMINI_READABLE_TYPES.includes(m.attachment.type))){
+          content = (content ? content + ' ' : '') + `[тіркелген файл: ${m.attachment.name}]`;
+        }
+        return { role: m.role, content };
+      });
+
+      const lastMsg = conv.messages[conv.messages.length - 1];
+      const bodyPayload = { system: buildSystemPrompt(), messages: apiMessages };
+      if(lastMsg.attachment && GEMINI_READABLE_TYPES.includes(lastMsg.attachment.type)){
+        bodyPayload.attachment = { url: lastMsg.attachment.url, mimeType: lastMsg.attachment.type };
+      }
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
         },
-        body: JSON.stringify({
-          system: buildSystemPrompt(),
-          messages: apiMessages
-        })
+        body: JSON.stringify(bodyPayload)
       });
       const data = await response.json();
       const reply = (data.text || "").trim() || "Кешіріңіз, жауап ала алмадым. Бірнеше секундтан кейін қайта көріңіз (мүмкін, тегін лимитке тап болдыңыз).";
@@ -805,7 +980,7 @@
 
   sendBtn.addEventListener('click', sendMessage);
   input.addEventListener('input', () => {
-    sendBtn.disabled = input.value.trim().length === 0;
+    sendBtn.disabled = input.value.trim().length === 0 && !pendingAttachment;
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 180) + 'px';
   });
