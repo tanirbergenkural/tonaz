@@ -920,6 +920,27 @@
   }
 
   // ---------- CHAT ----------
+  async function translatePromptForImage(prompt){
+    try{
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          system: "Translate the user's image description into a single, detailed, concise English sentence suitable for an AI image generator. Output ONLY the English translation, nothing else — no quotes, no explanations.",
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await response.json();
+      const translated = (data.text || "").trim();
+      return translated || prompt;
+    }catch(err){
+      return prompt;
+    }
+  }
+
   async function sendImageGeneration(prompt){
     const conv = activeConversation();
     if(!conv) return;
@@ -937,8 +958,9 @@
     renderAll();
     addTypingIndicator();
 
+    const englishPrompt = await translatePromptForImage(prompt);
     const seed = Math.floor(Math.random() * 1000000);
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&seed=${seed}&nologo=true`;
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(englishPrompt)}?width=768&height=768&seed=${seed}&nologo=true`;
 
     try{
       await new Promise((resolve, reject) => {
