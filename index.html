@@ -798,7 +798,8 @@
       appEl.classList.add('visible');
       userEmailEl.textContent = currentUser.email;
       avatarLetterEl.textContent = currentUser.email.charAt(0);
-     
+      // Тек шынымен жаңа кіру кезінде ғана чаттарды қайта жүктейміз
+      // (токен жаңарту сияқты оқиғалар ағымдағы чатты қайта жаза бермеу үшін)
       if(isNewUser){
         loadConversations();
       }
