@@ -328,6 +328,29 @@
   }
   .image-btn:hover{background:var(--bg-soft); color:var(--text);}
   .image-btn.active{background:var(--accent-bg); color:var(--accent-text);}
+  .council-btn{
+    width:34px; height:34px; border-radius:50%; border:none; background:transparent; color:var(--muted);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+  }
+  .council-btn:hover{background:var(--bg-soft); color:var(--text);}
+  .council-btn.active{background:var(--accent-bg); color:var(--accent-text);}
+
+  .council-block{
+    margin-bottom:10px; border:1px solid var(--border); border-radius:12px; background:var(--bg-soft);
+    max-width:520px;
+  }
+  .council-block summary{
+    padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer; color:var(--muted);
+    list-style:none; display:flex; align-items:center; gap:6px;
+  }
+  .council-block summary::-webkit-details-marker{display:none;}
+  .council-block summary::before{content:"▸"; font-size:11px; transition:transform .15s ease;}
+  .council-block[open] summary::before{transform:rotate(90deg);}
+  .council-agent{
+    padding:10px 14px; border-top:1px solid var(--border);
+  }
+  .council-agent .agent-name{font-size:12.5px; font-weight:700; margin-bottom:3px; color:var(--text);}
+  .council-agent .agent-text{font-size:13.5px; line-height:1.5; color:var(--muted); white-space:pre-wrap;}
   #input{
     flex:1; border:none; outline:none; resize:none; font-family:inherit; font-size:15px;
     line-height:1.5; max-height:180px; padding:8px 0; color:var(--text); background:transparent;
@@ -485,6 +508,9 @@
           <button class="image-btn" id="imageModeBtn" aria-label="Сурет жасау" type="button">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
           </button>
+          <button class="council-btn" id="councilModeBtn" aria-label="Агенттер кеңесі" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"></circle><circle cx="17" cy="8" r="3"></circle><path d="M2 20c0-3 3-5 7-5s7 2 7 5"></path><path d="M14 15.5c3-0.3 5 1.5 5 4.5"></path></svg>
+          </button>
           <textarea id="input" rows="1" placeholder="Tonaz-ға хабарлама жазыңыз"></textarea>
           <button id="sendBtn" disabled aria-label="Жіберу">↑</button>
         </div>
@@ -586,16 +612,31 @@
   const fileInput = document.getElementById('fileInput');
   const attachmentPreviewEl = document.getElementById('attachmentPreview');
   const imageModeBtn = document.getElementById('imageModeBtn');
+  const councilModeBtn = document.getElementById('councilModeBtn');
 
   let imageMode = false;
+  let councilMode = false;
 
   function setImageMode(on){
     imageMode = on;
+    if(on) setCouncilMode(false);
     imageModeBtn.classList.toggle('active', on);
-    input.placeholder = on ? 'Қандай сурет салайын? (мысалы: тау мен көл)' : 'Tonaz-ға хабарлама жазыңыз';
+    updatePlaceholder();
+  }
+  function setCouncilMode(on){
+    councilMode = on;
+    if(on) setImageMode(false);
+    councilModeBtn.classList.toggle('active', on);
+    updatePlaceholder();
+  }
+  function updatePlaceholder(){
+    if(imageMode) input.placeholder = 'Қандай сурет салайын? (мысалы: тау мен көл)';
+    else if(councilMode) input.placeholder = 'Агенттер талқылайтын сұрағыңызды жазыңыз';
+    else input.placeholder = 'Tonaz-ға хабарлама жазыңыз';
   }
 
   imageModeBtn.addEventListener('click', () => setImageMode(!imageMode));
+  councilModeBtn.addEventListener('click', () => setCouncilMode(!councilMode));
 
   const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
   const GEMINI_READABLE_TYPES = ['image/png','image/jpeg','image/webp','image/heic','image/heif','application/pdf','text/plain'];
@@ -757,8 +798,7 @@
       appEl.classList.add('visible');
       userEmailEl.textContent = currentUser.email;
       avatarLetterEl.textContent = currentUser.email.charAt(0);
-      // Тек шынымен жаңа кіру кезінде ғана чаттарды қайта жүктейміз
-      // (токен жаңарту сияқты оқиғалар ағымдағы чатты қайта жаза бермеу үшін)
+     
       if(isNewUser){
         loadConversations();
       }
@@ -875,6 +915,26 @@
     </a></div>`;
   }
 
+  function councilHTML(agents){
+    if(!agents || agents.length === 0) return '';
+    const agentsHtml = agents.map(a => `
+      <div class="council-agent">
+        <div class="agent-name"></div>
+        <div class="agent-text"></div>
+      </div>
+    `).join('');
+    return `<details class="council-block"><summary>Агенттердің талқылауы (${agents.length})</summary>${agentsHtml}</details>`;
+  }
+
+  function fillCouncilContent(container, agents){
+    if(!agents || agents.length === 0) return;
+    const nodes = container.querySelectorAll('.council-agent');
+    agents.forEach((a, i) => {
+      nodes[i].querySelector('.agent-name').textContent = a.name;
+      nodes[i].querySelector('.agent-text').textContent = a.text;
+    });
+  }
+
   function renderMessages(){
     const conv = activeConversation();
     messagesInner.innerHTML = '';
@@ -889,7 +949,8 @@
         wrapper.innerHTML = `<div class="bubble">${attachmentHTML(m.attachment)}<span class="bubble-text"></span></div>`;
         if(m.text) wrapper.querySelector('.bubble-text').textContent = m.text;
       } else {
-        wrapper.innerHTML = `<div class="avatar-a"></div><div class="bubble">${attachmentHTML(m.attachment)}<span class="bubble-text"></span></div>`;
+        wrapper.innerHTML = `<div class="avatar-a"></div><div class="bubble">${councilHTML(m.council)}${attachmentHTML(m.attachment)}<span class="bubble-text"></span></div>`;
+        if(m.council && m.council.length) fillCouncilContent(wrapper, m.council);
         if(m.text) wrapper.querySelector('.bubble-text').textContent = m.text;
       }
       messagesInner.appendChild(wrapper);
@@ -980,11 +1041,55 @@
     renderHistory();
   }
 
+  async function sendCouncilMessage(prompt){
+    const conv = activeConversation();
+    if(!conv) return;
+
+    if(conv.messages.length === 0){
+      conv.title = prompt.length > 28 ? prompt.slice(0, 28) + '…' : prompt;
+    }
+    conv.messages.push({ role: 'user', text: prompt });
+
+    input.value = '';
+    input.style.height = 'auto';
+    sendBtn.disabled = true;
+    setCouncilMode(false);
+
+    renderAll();
+    addTypingIndicator();
+
+    try{
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ mode: "council", prompt, system: buildSystemPrompt() })
+      });
+      const data = await response.json();
+      const finalText = (data.final || "").trim() || "Кешіріңіз, кеңес нәтижесін ала алмадым.";
+      conv.messages.push({ role: 'assistant', text: finalText, council: data.agents || [] });
+    }catch(err){
+      conv.messages.push({ role: 'assistant', text: "Кешіріңіз, қате орын алды. Байланысты тексеріп, қайта көріңіз." });
+    }
+
+    removeTypingIndicator();
+    renderAll();
+    await saveConversation(conv);
+    renderHistory();
+  }
+
   async function sendMessage(){
     const text = input.value.trim();
     if(imageMode){
       if(!text) return;
       await sendImageGeneration(text);
+      return;
+    }
+    if(councilMode){
+      if(!text) return;
+      await sendCouncilMessage(text);
       return;
     }
     if(!text && !pendingAttachment) return;
